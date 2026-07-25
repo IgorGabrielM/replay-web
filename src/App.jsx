@@ -1,15 +1,36 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from './supabase';
-import { Calendar, Clock, RefreshCw, Download, Share2, Trash2, X } from 'lucide-react';
+import { Calendar, Clock, RefreshCw, Download, Share2, Trash2 } from 'lucide-react';
 
 const PAGE_SIZE = 6;
 const HEADER_LOGO = "https://static.wixstatic.com/media/c68ee5_fd1fc8ce603c4084ace453685d3c642c~mv2.jpg/v1/fill/w_311,h_150,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/Prancheta%201%20c%C3%B3pia%202%20-%20Copia.jpg";
 
-// Componente para renderizar cada player individualmente
+// Componente para renderizar cada player individualmente com geração automática de Thumbnail
 function VideoPlayer({ videoUrl, videoName }) {
     const [src, setSrc] = useState(videoUrl);
+    const [poster, setPoster] = useState(null);
     const [hasError, setHasError] = useState(false);
+    const videoRef = useRef(null);
+
+    // Captura o primeiro frame do vídeo usando Canvas assim que os dados carregam
+    const handleLoadedData = () => {
+        const video = videoRef.current;
+        if (!video || poster) return;
+
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 320;
+            canvas.height = video.videoHeight || 240;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const thumbnailUrl = canvas.toDataURL('image/jpeg');
+            setPoster(thumbnailUrl);
+        } catch (e) {
+            console.warn("Não foi possível gerar thumbnail nativa via canvas:", e);
+        }
+    };
 
     const handleError = async () => {
         if (hasError) return;
@@ -28,11 +49,14 @@ function VideoPlayer({ videoUrl, videoName }) {
 
     return (
         <video
+            ref={videoRef}
             key={src}
             controls
             playsInline
-            preload="metadata"
-            src={src}
+            preload="auto"
+            poster={poster}
+            src={`${src}#t=0.5`}
+            onLoadedData={handleLoadedData}
             onError={handleError}
             className="w-full h-full object-contain"
         >
@@ -109,6 +133,7 @@ const fetchReplays = async ({ pageParam = 0, queryKey }) => {
 export default function App() {
     const [selectedDate, setSelectedDate] = useState('');
     const loadMoreRef = useRef(null);
+    const inputRef = useRef(null);
 
     const {
         data,
@@ -176,10 +201,6 @@ export default function App() {
         }
     };
 
-    const allVideos = data?.pages.flatMap((page) => page.videos) || [];
-
-    const inputRef = useRef(null);
-
     const handleContainerClick = () => {
         if (inputRef.current) {
             if ('showPicker' in HTMLInputElement.prototype) {
@@ -193,6 +214,8 @@ export default function App() {
             }
         }
     };
+
+    const allVideos = data?.pages.flatMap((page) => page.videos) || [];
 
     return (
         <div className="min-h-screen w-full bg-[#c65231] m-0 p-0 text-white font-sans overflow-x-hidden">
@@ -208,13 +231,9 @@ export default function App() {
                 </header>
 
                 {/* Filtro Estilizado por Data */}
-
-
-
-                {/* Trecho Atualizado */}
                 <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl mb-7 shadow-[0_8px_20px_rgba(0,0,0,0.12)] border border-white/25 max-w-[450px] mx-auto">
                     <div className="flex flex-col gap-2">
-                        {/* Cabeçalho do filtro com label e botão de lixeira na mesma linha */}
+                        {/* Cabeçalho do filtro com label e botão de lixeira */}
                         <div className="flex items-center justify-between">
                             <label className="text-xs font-bold flex items-center gap-1.5 text-white uppercase tracking-wider">
                                 <Calendar size={16}/> Filtrar por dia
@@ -224,7 +243,7 @@ export default function App() {
                                 <button
                                     type="button"
                                     onClick={() => setSelectedDate('')}
-                                    className="flex items-center gap-1 text-xs font-medium text-white/80 hover:text-white hover:bg-white/10 px-2 rounded-md transition cursor-pointer"
+                                    className="flex items-center gap-1 text-xs font-medium text-white/80 hover:text-white hover:bg-white/10 px-2 py-1 rounded-md transition cursor-pointer"
                                     title="Limpar filtro"
                                 >
                                     <Trash2 size={14} />
@@ -271,7 +290,7 @@ export default function App() {
                     <div className="text-center py-12 text-white text-base font-medium">Nenhum replay encontrado para esta data.</div>
                 ) : (
                     (() => {
-                        // 1. Agrupa os vídeos por data formatada (ex: "23/06/2024")
+                        // 1. Agrupa os vídeos por data formatada
                         const groupedVideos = allVideos.reduce((acc, video) => {
                             const dateKey = new Date(video.created_at).toLocaleDateString('pt-BR', {
                                 day: '2-digit',
@@ -317,11 +336,11 @@ export default function App() {
                                                             <div className="flex items-center gap-1.5 text-xs font-bold text-[#c65231]">
                                                                 <Clock size={14} />
                                                                 <span>
-                                                    {new Date(video.created_at).toLocaleTimeString('pt-BR', {
-                                                        hour: '2-digit',
-                                                        minute: '2-digit',
-                                                    })}
-                                                </span>
+                                                                    {new Date(video.created_at).toLocaleTimeString('pt-BR', {
+                                                                        hour: '2-digit',
+                                                                        minute: '2-digit',
+                                                                    })}
+                                                                </span>
                                                             </div>
 
                                                             <div className="flex gap-2 items-center">
