@@ -247,10 +247,14 @@ export default function App() {
                             </div>
                             <input
                                 ref={inputRef}
-                                type="date"
+                                type={selectedDate ? "date" : "text"}
+                                onFocus={(e) => (e.target.type = "date")}
+                                onBlur={(e) => {
+                                    if (!e.target.value) e.target.type = "text";
+                                }}
                                 id="default-datepicker"
-                                className="w-full ps-9 pe-3 py-2.5 mt-2 bg-neutral-secondary-medium border border-default-medium rounded-md text-heading text-sm rounded-base focus:ring-brand focus:border-brand px-3 shadow-xs placeholder:text-body cursor-pointer"
-                                placeholder="Select date"
+                                className="w-full ps-9 pe-3 py-2.5 mt-2 bg-neutral-secondary-medium border border-default-medium rounded-md text-heading text-sm text-white focus:ring-brand focus:border-brand px-3 shadow-xs cursor-pointer"
+                                placeholder="Selecione uma data"
                                 value={selectedDate}
                                 onChange={(e) => setSelectedDate(e.target.value)}
                             />
