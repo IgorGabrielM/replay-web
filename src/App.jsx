@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from './supabase';
-import { Calendar, Clock, RefreshCw, Download, Share2, X } from 'lucide-react';
+import { Calendar, Clock, RefreshCw, Download, Share2, Trash2, X } from 'lucide-react';
 
 const PAGE_SIZE = 6;
 const HEADER_LOGO = "https://static.wixstatic.com/media/c68ee5_fd1fc8ce603c4084ace453685d3c642c~mv2.jpg/v1/fill/w_311,h_150,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/Prancheta%201%20c%C3%B3pia%202%20-%20Copia.jpg";
 
-// Componente para renderizar cada player individualmente com suporte a Blob e URL direta
+// Componente para renderizar cada player individualmente
 function VideoPlayer({ videoUrl, videoName }) {
     const [src, setSrc] = useState(videoUrl);
     const [hasError, setHasError] = useState(false);
@@ -34,7 +34,7 @@ function VideoPlayer({ videoUrl, videoName }) {
             preload="metadata"
             src={src}
             onError={handleError}
-            style={styles.video}
+            className="w-full h-full object-contain"
         >
             Seu navegador não suporta a exibição deste vídeo.
         </video>
@@ -72,21 +72,14 @@ const fetchReplays = async ({ pageParam = 0, queryKey }) => {
 
     if (error) throw error;
 
-    // Filtra apenas o dia selecionado (de 00:00:00 até 23:59:59)
     const filteredData = (data || []).filter((file) => {
         if (file.name === '.emptyFolderPlaceholder' || !file.name.endsWith('.mp4')) return false;
 
         if (selectedDate) {
             const fileDate = new Date(file.created_at);
-
-            // Define o início do dia
-            const startOfDay = new Date(selectedDate);
-            startOfDay.setHours(0, 0, 0, 0);
-
-            // Define o fim do dia
-            const endOfDay = new Date(selectedDate);
-            endOfDay.setHours(23, 59, 59, 999);
-
+            const [year, month, day] = selectedDate.split('-').map(Number);
+            const startOfDay = new Date(year, month - 1, day, 0, 0, 0, 0);
+            const endOfDay = new Date(year, month - 1, day, 23, 59, 59, 999);
             if (fileDate < startOfDay || fileDate > endOfDay) return false;
         }
 
@@ -103,7 +96,7 @@ const fetchReplays = async ({ pageParam = 0, queryKey }) => {
             id: file.id || file.name,
             name: file.name,
             created_at: file.created_at,
-            url: urlData.publicUrl, // <--- Use a publicUrl sem fazer replace
+            url: urlData.publicUrl,
         };
     });
 
@@ -185,317 +178,188 @@ export default function App() {
 
     const allVideos = data?.pages.flatMap((page) => page.videos) || [];
 
-    return (
-        <div style={styles.pageWrapper}>
-            {/* Reset do CSS Global para remover qualquer borda/espaço em branco padrão do navegador */}
-            <style>
-                {`
-                    * {
-                        box-sizing: border-box;
-                    }
-                    html, body {
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        background-color: #c65231 !important;
-                        overflow-x: hidden;
-                    }
-                    @keyframes spin {
-                        from { transform: rotate(0deg); }
-                        to { transform: rotate(360deg); }
-                    }
-                    .spin-icon {
-                        animation: spin 1s linear infinite;
-                    }
-                `}
-            </style>
+    const inputRef = useRef(null);
 
-            <div style={styles.container}>
+    const handleContainerClick = () => {
+        if (inputRef.current) {
+            if ('showPicker' in HTMLInputElement.prototype) {
+                try {
+                    inputRef.current.showPicker();
+                } catch (error) {
+                    inputRef.current.focus();
+                }
+            } else {
+                inputRef.current.focus();
+            }
+        }
+    };
+
+    return (
+        <div className="min-h-screen w-full bg-[#c65231] m-0 p-0 text-white font-sans overflow-x-hidden">
+            <div className="max-w-[1000px] mx-auto px-4 py-6">
+
                 {/* Header */}
-                <header style={styles.header}>
+                <header className="text-center mb-7 flex flex-col items-center">
                     <img
                         src={HEADER_LOGO}
                         alt="Logo Escalada"
-                        style={styles.logoImage}
+                        className="max-w-[280px] w-full h-auto rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.3)] mb-4 object-cover"
                     />
                 </header>
 
-                {/* Filtro Estilizado por Data Única */}
-                <div style={styles.filterCard}>
-                    <div style={styles.filterGroup}>
-                        <label style={styles.label}>
-                            <Calendar size={16} /> Filtrar por dia
-                        </label>
-                        <div style={styles.inputContainer}>
-                            <input
-                                type="date"
-                                value={selectedDate}
-                                onChange={(e) => setSelectedDate(e.target.value)}
-                                style={styles.input}
-                            />
+                {/* Filtro Estilizado por Data */}
+
+
+
+                {/* Trecho Atualizado */}
+                <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl mb-7 shadow-[0_8px_20px_rgba(0,0,0,0.12)] border border-white/25 max-w-[450px] mx-auto">
+                    <div className="flex flex-col gap-2">
+                        {/* Cabeçalho do filtro com label e botão de lixeira na mesma linha */}
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold flex items-center gap-1.5 text-white uppercase tracking-wider">
+                                <Calendar size={16}/> Filtrar por dia
+                            </label>
+
                             {selectedDate && (
                                 <button
+                                    type="button"
                                     onClick={() => setSelectedDate('')}
-                                    style={styles.clearBtn}
+                                    className="flex items-center gap-1 text-xs font-medium text-white/80 hover:text-white hover:bg-white/10 px-2 rounded-md transition cursor-pointer"
                                     title="Limpar filtro"
                                 >
-                                    <X size={16} />
+                                    <Trash2 size={14} />
+                                    <span>Limpar</span>
                                 </button>
                             )}
+                        </div>
+
+                        {/* Input de Data */}
+                        <div
+                            onClick={handleContainerClick}
+                            className="relative cursor-pointer w-full"
+                        >
+                            <div className="w-full absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none mt-2">
+                                <svg className="w-4 h-4 text-body" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+                                     width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                          d="M4 10h16m-8-3V4M7 7V4m10 3V4M5 20h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Zm3-7h.01v.01H8V13Zm4 0h.01v.01H12V13Zm4 0h.01v.01H16V13Zm-8 4h.01v.01H8V17Zm4 0h.01v.01H12V17Zm4 0h.01v.01H16V17Z"/>
+                                </svg>
+                            </div>
+                            <input
+                                ref={inputRef}
+                                type="date"
+                                id="default-datepicker"
+                                className="w-full ps-9 pe-3 py-2.5 mt-2 bg-neutral-secondary-medium border border-default-medium rounded-md text-heading text-sm rounded-base focus:ring-brand focus:border-brand px-3 shadow-xs placeholder:text-body cursor-pointer"
+                                placeholder="Select date"
+                                value={selectedDate}
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                            />
                         </div>
                     </div>
                 </div>
 
                 {/* Feed de Vídeos */}
                 {isLoading ? (
-                    <div style={styles.statusMsg}>Carregando replays...</div>
+                    <div className="text-center py-12 text-white text-base font-medium">Carregando replays...</div>
                 ) : isError ? (
-                    <div style={styles.statusMsg}>Erro ao carregar os vídeos.</div>
+                    <div className="text-center py-12 text-white text-base font-medium">Erro ao carregar os vídeos.</div>
                 ) : allVideos.length === 0 ? (
-                    <div style={styles.statusMsg}>Nenhum replay encontrado para esta data.</div>
+                    <div className="text-center py-12 text-white text-base font-medium">Nenhum replay encontrado para esta data.</div>
                 ) : (
-                    <div style={styles.grid}>
-                        {allVideos.map((video) => (
-                            <div key={video.id} style={styles.card}>
-                                <div style={styles.videoWrapper}>
-                                    <VideoPlayer videoUrl={video.url} videoName={video.name} />
-                                </div>
+                    (() => {
+                        // 1. Agrupa os vídeos por data formatada (ex: "23/06/2024")
+                        const groupedVideos = allVideos.reduce((acc, video) => {
+                            const dateKey = new Date(video.created_at).toLocaleDateString('pt-BR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                            });
 
-                                <div style={styles.cardInfo}>
-                                    {/* Data/Hora + Botões de Ação na mesma linha */}
-                                    <div style={styles.cardHeaderRow}>
-                                        <div style={styles.dateBadge}>
-                                            <Clock size={14} />
-                                            <span>
-                                                {new Date(video.created_at).toLocaleString('pt-BR', {
-                                                    day: '2-digit',
-                                                    month: '2-digit',
-                                                    year: 'numeric',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit',
-                                                })}
-                                            </span>
+                            if (!acc[dateKey]) {
+                                acc[dateKey] = [];
+                            }
+                            acc[dateKey].push(video);
+                            return acc;
+                        }, {});
+
+                        // 2. Renderiza cada grupo com o cabeçalho do dia
+                        return (
+                            <div className="flex flex-col gap-10">
+                                {Object.entries(groupedVideos).map(([date, videos]) => (
+                                    <div key={date} className="flex flex-col gap-4">
+
+                                        {/* Título da Data */}
+                                        <div className="flex items-center gap-3">
+                                            <h2 className="text-xl font-bold text-white bg-black/20 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/10 inline-flex items-center gap-2">
+                                                <Calendar size={18} />
+                                                {date}
+                                            </h2>
+                                            <div className="flex-1 h-[1px] bg-white/20"></div>
                                         </div>
 
-                                        <div style={styles.iconActions}>
-                                            <button
-                                                onClick={() => handleDownload(video.url, video.name)}
-                                                style={styles.iconBtn}
-                                                title="Baixar vídeo"
-                                            >
-                                                <Download size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleShare(video)}
-                                                style={{ ...styles.iconBtn, ...styles.shareIconBtn }}
-                                                title="Compartilhar"
-                                            >
-                                                <Share2 size={16} />
-                                            </button>
+                                        {/* Grid de Vídeos daquela Data */}
+                                        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
+                                            {videos.map((video) => (
+                                                <div key={video.id} className="bg-white rounded-2xl overflow-hidden shadow-[0_6px_18px_rgba(0,0,0,0.15)] flex flex-col">
+
+                                                    {/* Video Wrapper */}
+                                                    <div className="bg-black aspect-[4/3] flex items-center justify-center">
+                                                        <VideoPlayer videoUrl={video.url} videoName={video.name} />
+                                                    </div>
+
+                                                    {/* Card Body */}
+                                                    <div className="p-3 px-4 flex flex-col bg-white">
+                                                        <div className="flex items-center justify-between w-full">
+                                                            <div className="flex items-center gap-1.5 text-xs font-bold text-[#c65231]">
+                                                                <Clock size={14} />
+                                                                <span>
+                                                    {new Date(video.created_at).toLocaleTimeString('pt-BR', {
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                    })}
+                                                </span>
+                                                            </div>
+
+                                                            <div className="flex gap-2 items-center">
+                                                                <button
+                                                                    onClick={() => handleDownload(video.url, video.name)}
+                                                                    className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 cursor-pointer p-0 hover:bg-slate-100 transition"
+                                                                    title="Baixar vídeo"
+                                                                >
+                                                                    <Download size={16} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleShare(video)}
+                                                                    className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#c65231] bg-[#c65231] text-white cursor-pointer p-0 hover:bg-[#a84225] transition"
+                                                                    title="Compartilhar"
+                                                                >
+                                                                    <Share2 size={16} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                </div>
+                                            ))}
                                         </div>
+
                                     </div>
-                                </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
+                        );
+                    })()
                 )}
 
                 {/* Scroll Infinito */}
-                <div ref={loadMoreRef} style={styles.loadMore}>
+                <div ref={loadMoreRef} className="p-6 text-center">
                     {isFetchingNextPage && (
-                        <div style={styles.loadingMoreText}>
-                            <RefreshCw size={18} className="spin-icon" /> Carregando mais vídeos...
+                        <div className="flex items-center justify-center gap-2 text-white font-semibold">
+                            <RefreshCw size={18} className="animate-spin"/> Carregando mais vídeos...
                         </div>
                     )}
                 </div>
+
             </div>
         </div>
     );
 }
-
-const styles = {
-    pageWrapper: {
-        minHeight: '100vh',
-        width: '100%',
-        backgroundColor: '#c65231',
-        margin: 0,
-        padding: 0,
-    },
-    container: {
-        maxWidth: '1000px',
-        margin: '0 auto',
-        padding: '24px 16px',
-        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        color: '#fff',
-    },
-    header: {
-        textAlign: 'center',
-        marginBottom: '28px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-    },
-    logoImage: {
-        maxWidth: '280px',
-        width: '100%',
-        height: 'auto',
-        borderRadius: '16px',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-        marginBottom: '16px',
-        objectFit: 'cover',
-    },
-    title: {
-        fontSize: '28px',
-        fontWeight: '800',
-        margin: '0 0 6px 0',
-        color: '#ffffff',
-        letterSpacing: '-0.5px',
-    },
-    subtitle: {
-        fontSize: '14px',
-        margin: '0',
-        color: 'rgba(255, 255, 255, 0.85)',
-    },
-    filterCard: {
-        backgroundColor: 'rgba(255, 255, 255, 0.12)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        padding: '16px 20px',
-        borderRadius: '20px',
-        marginBottom: '28px',
-        boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
-        border: '1px solid rgba(255, 255, 255, 0.25)',
-        maxWidth: '450px',
-        marginInline: 'auto',
-    },
-    filterGroup: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-    },
-    label: {
-        fontSize: '13px',
-        fontWeight: '700',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        color: '#ffffff',
-        textTransform: 'uppercase',
-        letterSpacing: '0.6px',
-    },
-    inputContainer: {
-        display: 'flex',
-        gap: '8px',
-        alignItems: 'center',
-    },
-    input: {
-        flex: 1,
-        padding: '12px 16px',
-        borderRadius: '12px',
-        border: 'none',
-        backgroundColor: '#ffffff',
-        fontSize: '15px',
-        fontWeight: '500',
-        color: '#1e293b',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        outline: 'none',
-        cursor: 'pointer',
-    },
-    clearBtn: {
-        padding: '12px 14px',
-        borderRadius: '12px',
-        border: 'none',
-        backgroundColor: 'rgba(0, 0, 0, 0.3)',
-        color: '#fff',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    grid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-        gap: '20px',
-    },
-    card: {
-        backgroundColor: '#ffffff',
-        borderRadius: '16px',
-        overflow: 'hidden',
-        boxShadow: '0 6px 18px rgba(0,0,0,0.15)',
-        display: 'flex',
-        flexDirection: 'column',
-    },
-    videoWrapper: {
-        backgroundColor: '#000',
-        aspectRatio: '4/3',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    video: {
-        width: '100%',
-        height: '100%',
-        objectFit: 'contain',
-    },
-    cardInfo: {
-        padding: '12px 16px',
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: '#ffffff',
-    },
-    cardHeaderRow: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        width: '100%',
-    },
-    dateBadge: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        fontSize: '13px',
-        fontWeight: '700',
-        color: '#c65231',
-    },
-    iconActions: {
-        display: 'flex',
-        gap: '8px',
-        alignItems: 'center',
-    },
-    iconBtn: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '34px',
-        height: '34px',
-        borderRadius: '8px',
-        border: '1px solid #e2e8f0',
-        backgroundColor: '#f8fafc',
-        color: '#334155',
-        cursor: 'pointer',
-        padding: 0,
-    },
-    shareIconBtn: {
-        backgroundColor: '#c65231',
-        color: '#ffffff',
-        borderColor: '#c65231',
-    },
-    statusMsg: {
-        textAlign: 'center',
-        padding: '50px 20px',
-        color: '#ffffff',
-        fontSize: '16px',
-        fontWeight: '500',
-    },
-    loadMore: {
-        padding: '25px',
-        textAlign: 'center',
-    },
-    loadingMoreText: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px',
-        color: '#ffffff',
-        fontWeight: '600',
-    },
-};
