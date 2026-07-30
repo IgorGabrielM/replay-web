@@ -233,9 +233,9 @@ export default function App() {
                 {/* Filtro Estilizado por Data */}
                 <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl mb-7 shadow-[0_8px_20px_rgba(0,0,0,0.12)] border border-white/25 max-w-[450px] mx-auto">
                     <div className="flex flex-col gap-2">
-                        {/* Cabeçalho do filtro com label e botão de lixeira */}
+                        {/* Cabeçalho do filtro com label e botão de limpar */}
                         <div className="flex items-center justify-between">
-                            <label className="text-xs font-bold flex items-center gap-1.5 text-white uppercase tracking-wider">
+                            <label htmlFor="datepicker-input" className="text-xs font-bold flex items-center gap-1.5 text-white uppercase tracking-wider">
                                 <Calendar size={16}/> Filtrar por dia
                             </label>
 
@@ -252,30 +252,26 @@ export default function App() {
                             )}
                         </div>
 
-                        {/* Input de Data */}
-                        <div
-                            onClick={handleContainerClick}
-                            className="relative cursor-pointer w-full"
-                        >
-                            <div className="w-full absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none mt-2">
-                                <svg className="w-4 h-4 text-body" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
-                                     width="24" height="24" fill="none" viewBox="0 0 24 24">
-                                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                                          d="M4 10h16m-8-3V4M7 7V4m10 3V4M5 20h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Zm3-7h.01v.01H8V13Zm4 0h.01v.01H12V13Zm4 0h.01v.01H16V13Zm-8 4h.01v.01H8V17Zm4 0h.01v.01H12V17Zm4 0h.01v.01H16V17Z"/>
-                                </svg>
+                        {/* Input de Data Otimizado para iOS */}
+                        <div className="relative w-full">
+                            {/* Ícone de Calendário decorativo */}
+                            <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none z-10">
+                                <Calendar size={18} className="text-white/70" />
                             </div>
+
+                            {/* Placeholder customizado quando vazio (resolve o problema visual sem alterar o type) */}
+                            {!selectedDate && (
+                                <span className="absolute inset-y-0 start-10 flex items-center text-sm text-white/70 pointer-events-none z-10">
+                    Selecione uma data...
+                </span>
+                            )}
+
                             <input
-                                ref={inputRef}
-                                type={selectedDate ? "date" : "text"}
-                                onFocus={(e) => (e.target.type = "date")}
-                                onBlur={(e) => {
-                                    if (!e.target.value) e.target.type = "text";
-                                }}
-                                id="default-datepicker"
-                                className="w-full ps-9 pe-3 py-2.5 mt-2 bg-neutral-secondary-medium border border-default-medium rounded-md text-heading text-sm text-white focus:ring-brand focus:border-brand px-3 shadow-xs cursor-pointer"
-                                placeholder="Selecione uma data"
+                                id="datepicker-input"
+                                type="date"
                                 value={selectedDate}
                                 onChange={(e) => setSelectedDate(e.target.value)}
+                                className="w-full ps-10 pe-3 py-2.5 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder-transparent focus:outline-none focus:ring-2 focus:ring-white/40 shadow-xs cursor-pointer appearance-none [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:top-0 [&::-webkit-calendar-picker-indicator]:left-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                             />
                         </div>
                     </div>
